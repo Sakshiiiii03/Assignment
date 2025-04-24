@@ -1,0 +1,64 @@
+import org.junit.jupiter.api.*;
+import org.openqa.selenium.*;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.support.ui.*;
+
+import java.time.Duration;
+import java.util.List;
+
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+public class HotelBookingTest {
+
+    private WebDriver driver;
+    private WebDriverWait wait;
+
+    @BeforeEach
+    public void setUp() {
+        driver = new ChromeDriver();
+        wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        driver.manage().window().maximize();
+    }
+
+    @Test
+    @Order(1)
+    public void testHotelBookingFlow() {
+        // Step 1: Open the hotel booking application
+        driver.get("https://example-hotel-booking.com");
+
+        // Step 2: Search for hotels in “New York” for April 10 - April 15
+        WebElement destination = wait.until(ExpectedConditions.elementToBeClickable(By.id("destination")));
+        destination.sendKeys("New York");
+
+        driver.findElement(By.id("checkin")).sendKeys("04/10/2025");
+        driver.findElement(By.id("checkout")).sendKeys("04/15/2025");
+
+        driver.findElement(By.id("search-button")).click();
+
+        // Step 3: Select the first hotel from the search results
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.className("hotel-card")));
+        List<WebElement> hotels = driver.findElements(By.className("hotel-card"));
+        hotels.get(0).findElement(By.className("book-now-button")).click();
+
+        // Step 4: Apply the coupon code "SUMMER25"
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("coupon-code"))).sendKeys("SUMMER25");
+        driver.findElement(By.id("apply-coupon")).click();
+
+        // Step 5: Verify the discount is applied correctly
+        WebElement discountSummary = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("discount-summary")));
+        String discountText = discountSummary.getText();
+        Assertions.assertTrue(discountText.contains("25%") || discountText.contains("SUMMER25"), "Discount not applied correctly!");
+
+        // Step 6: Proceed to checkout (without payment)
+        driver.findElement(By.id("proceed-to-checkout")).click();
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("checkout-page")));
+
+        System.out.println("Test passed. Reached checkout successfully with discount applied.");
+    }
+
+    @AfterEach
+    public void tearDown() {
+        if (driver != null) {
+            driver.quit();
+        }
+    }
+}
